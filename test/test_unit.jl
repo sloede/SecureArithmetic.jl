@@ -146,6 +146,103 @@ for backend in ((; name = "OpenFHE", BackendT = OpenFHEBackend, context = contex
             @test_nowarn show(stdout, private_key)
             println()
         end
+
+        m1 = [[0.25, 0.5, 0.75], [1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]
+        m2 = [6.0 5.0 4.0; 3.0 2.0 1.0; 0.75 0.5 0.25]
+        m3 = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+
+        @testset verbose=true showtiming=true "PlainMatrix" begin
+            @test PlainMatrix(m1, context) isa PlainMatrix
+            @test PlainMatrix(m2, context) isa PlainMatrix
+            @test PlainMatrix(m3, context) isa PlainMatrix
+        end
+
+        pm1 = PlainMatrix(m1, context)
+        pm2 = PlainMatrix(m2, context)
+        pv1 = PlainVector([1.0, 2.0, 0.25], context)
+        
+
+        @testset verbose=true showtiming=true "encrypt matrix" begin
+            @test encrypt(pm1, public_key) isa SecureMatrix
+        end
+
+        sm1 = encrypt(pm1, public_key)
+        sm2 = encrypt(pm2, public_key)
+        sv1 = encrypt(pv1, public_key)
+
+        @testset verbose=true showtiming=true "add matrix" begin
+            @test sm1 + sm2 isa SecureMatrix
+            @test sm1 + pm1 isa SecureMatrix
+            @test pm1 + sm1 isa SecureMatrix
+            @test sm1 + 3 isa SecureMatrix
+            @test 4 + sm1 isa SecureMatrix
+            @test sm1 + sv1 isa SecureMatrix
+            @test sv1 + sm2 isa SecureMatrix
+            @test sm1 + pv1 isa SecureMatrix
+            @test pv1 + sm2 isa SecureMatrix
+        end
+
+        @testset verbose=true showtiming=true "subtract matrix" begin
+            @test sm1 - sm2 isa SecureMatrix
+            @test sm1 - pm1 isa SecureMatrix
+            @test pm1 - sm1 isa SecureMatrix
+            @test sm1 - 3 isa SecureMatrix
+            @test 4 - sm1 isa SecureMatrix
+            @test sm1 - sv1 isa SecureMatrix
+            @test sv1 - sm2 isa SecureMatrix
+            @test sm1 - pv1 isa SecureMatrix
+            @test pv1 - sm2 isa SecureMatrix
+        end
+
+        @testset verbose=true showtiming=true "multiply matrix" begin
+            @test sm1 * sm2 isa SecureMatrix
+            @test sm1 * pm1 isa SecureMatrix
+            @test pm1 * sm1 isa SecureMatrix
+            @test sm1 * 3 isa SecureMatrix
+            @test 4 * sm1 isa SecureMatrix
+            @test sm1 * sv1 isa SecureMatrix
+            @test sv1 * sm2 isa SecureMatrix
+            @test sm1 * pv1 isa SecureMatrix
+            @test pv1 * sm2 isa SecureMatrix
+        end
+
+        @testset verbose=true showtiming=true "negate matrix" begin
+            @test -sm1 isa SecureMatrix
+        end
+
+        @testset verbose=true showtiming=true "circshift matrix" begin
+            @test circshift(sm1, (1,0)) isa SecureMatrix
+            @test circshift(sm1, (0,1)) isa SecureMatrix
+            @test circshift(sm1, (0,0)) isa SecureMatrix
+            @test_throws ArgumentError circshift(sm1, (1,1); wrap_by = :wololo)
+            @test circshift(sm1, (1,-1); wrap_by = :length) isa SecureMatrix
+            @test circshift(sm1, (-2,1); wrap_by = :length) isa SecureMatrix
+        end
+
+        @testset verbose=true showtiming=true "length matrix" begin
+            @test length(pm1) == length(m1)
+            @test length(sm1) == length(pm1)
+        end
+
+        @testset verbose=true showtiming=true "level matrix" begin
+            @test level(pm1) == 0
+            @test level(sm1) == 0
+        end
+
+        @testset verbose=true showtiming=true "collect matrix" begin
+            @test collect(pm1) ≈ m1
+        end
+
+        @testset verbose=true showtiming=true "show matrix" begin
+            @test_nowarn show(stdout, pm1)
+            println()
+
+            @test_nowarn show(stdout, MIME"text/plain"(), pm1)
+            println()
+
+            @test_nowarn show(stdout, sm1)
+            println()
+        end
     end
 end
 

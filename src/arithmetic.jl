@@ -49,3 +49,53 @@ function Base.circshift(sv::SecureVector, shift::Integer; wrap_by = :capacity)
 
     rotate(sv, shift; wrap_by)
 end
+
+# Add
+Base.:+(sm1::SecureMatrix, sm2::SecureMatrix) = add(sm1, sm2)
+Base.:+(sm::SecureMatrix, pm::PlainMatrix) = add(sm, pm)
+Base.:+(pm::PlainMatrix, sm::SecureMatrix) = add(sm, pm)
+Base.:+(sm::SecureMatrix, scalar::Real) = add(sm, scalar)
+Base.:+(scalar::Real, sm::SecureMatrix) = add(sm, scalar)
+Base.:+(sm::SecureMatrix, sv::SecureVector) = add(sm, sv)
+Base.:+(sv::SecureVector, sm::SecureMatrix) = add(sm, sv)
+Base.:+(sm::SecureMatrix, pv::PlainVector) = add(sm, pv)
+Base.:+(pv::PlainVector, sm::SecureMatrix) = add(sm, pv)
+
+# Subtract
+Base.:-(sm1::SecureMatrix, sm2::SecureMatrix) = subtract(sm1, sm2)
+Base.:-(sm::SecureMatrix, pm::PlainMatrix) = subtract(sm, pm)
+Base.:-(pm::PlainMatrix, sm::SecureMatrix) = subtract(pm, sm)
+Base.:-(sm::SecureMatrix, scalar::Real) = subtract(sm, scalar)
+Base.:-(scalar::Real, sm::SecureMatrix) = subtract(scalar, sm)
+Base.:-(sm::SecureMatrix, sv::SecureVector) = subtract(sm, sv)
+Base.:-(sv::SecureVector, sm::SecureMatrix) = subtract(sv, sm)
+Base.:-(sm::SecureMatrix, pv::PlainVector) = subtract(sm, pv)
+Base.:-(pv::PlainVector, sm::SecureMatrix) = subtract(pv, sm)
+
+# Negate
+Base.:-(sm::SecureMatrix) = negate(sm)
+
+# Multiply
+Base.:*(sm1::SecureMatrix, sm2::SecureMatrix) = multiply(sm1, sm2)
+Base.:*(sm::SecureMatrix, pm::PlainMatrix) = multiply(sm, pm)
+Base.:*(pm::PlainMatrix, sm::SecureMatrix) = multiply(sm, pm)
+Base.:*(sm::SecureMatrix, scalar::Real) = multiply(sm, scalar)
+Base.:*(scalar::Real, sm::SecureMatrix) = multiply(sm, scalar)
+Base.:*(sm::SecureMatrix, sv::SecureVector) = multiply(sm, sv)
+Base.:*(sv::SecureVector, sm::SecureMatrix) = multiply(sm, sv)
+Base.:*(sm::SecureMatrix, pv::PlainVector) = multiply(sm, pv)
+Base.:*(pv::PlainVector, sm::SecureMatrix) = multiply(sm, pv)
+
+# circular shift
+
+function Base.circshift(sm::SecureMatrix, shift::Union{Vector{Int}, Tuple{Int, Int}}; wrap_by = :capacity)
+    if !(wrap_by in (:length, :capacity))
+        throw(ArgumentError("Unsupported value '$wrap_by' passed to `wrap_by` (must be `:length` or `:capacity`)"))
+    end
+
+    if shift[1] == 0 && shift[2] == 0
+        return sm
+    end
+
+    rotate(sm, shift; wrap_by)
+end

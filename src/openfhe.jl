@@ -381,3 +381,203 @@ function rotate(sv::SecureVector{<:OpenFHEBackend}, shift; wrap_by)
 
     secure_vector
 end
+
+############################################################################################
+# Matrix
+############################################################################################
+
+function PlainMatrix(data::Vector{Vector{Float64}}, context::SecureContext)
+    plain_vectors = PlainVector.(data, Ref(context))
+    plain_matrix = PlainMatrix(plain_vectors, length(data), context)
+
+    plain_matrix
+end
+function PlainMatrix(data::Vector{DataT}, context::SecureContext) where DataT<:Vector{<:Real}
+    PlainMatrix(convert(Vector{Vector{Float64}}, data), context)
+end
+function PlainMatrix(data::Matrix{<:Real}, context::SecureContext)
+    PlainMatrix(Vector{Float64}[eachrow(data)...], context)
+end
+
+function Base.show(io::IO, m::PlainMatrix{<:OpenFHEBackend})
+    print(io, collect(m))
+end
+
+function Base.show(io::IO, ::MIME"text/plain", m::PlainMatrix{<:OpenFHEBackend})
+    print(io, m.length*m.data[1].length, "-element PlainMatrix{OpenFHEBackend}:\n")
+    Base.print_matrix(io, collect(m))
+end
+
+function Base.collect(m::PlainMatrix)
+    collect.(m.data)
+end
+
+function level(m::Union{SecureMatrix, PlainMatrix})
+    level(m.data[1])
+end
+
+function encrypt_impl(plain_matrix::PlainMatrix, public_key::PublicKey)
+    secure_vectors = encrypt.(plain_matrix.data, Ref(public_key))
+    secure_matrix = SecureMatrix(secure_vectors, length(plain_matrix), plain_matrix.context)
+
+    secure_matrix
+end
+
+function decrypt_impl!(plain_matrix::PlainMatrix{<:OpenFHEBackend},
+                       secure_matrix::SecureMatrix{<:OpenFHEBackend}, private_key::PrivateKey)
+    decrypt_impl!.(plain_matrix.data, secure_matrix.data, Ref(private_key))
+
+    plain_matrix
+end
+
+function decrypt_impl(secure_matrix::SecureMatrix{<:OpenFHEBackend}, private_key::PrivateKey)
+    context = secure_matrix.context
+    plain_matrix = PlainMatrix([PlainVector(OpenFHE.Plaintext(), length(sv), capacity(sv), context)
+                                for sv in secure_matrix.data],
+                               length(secure_matrix), context)
+
+    decrypt!(plain_matrix, secure_matrix, private_key)
+end
+
+function bootstrap!(secure_matrix::SecureMatrix)
+    bootstrap!.(secure_matrix.data)
+
+    secure_matrix
+end
+
+
+############################################################################################
+# Arithmetic operations on matrix
+############################################################################################
+# All operations are defined elementwise 
+function add(sm1::SecureMatrix, sm2::SecureMatrix)
+    secure_matrix = SecureMatrix(add.(sm1.data, sm2.data), length(sm1), sm1.context)
+
+    secure_matrix
+end
+
+function add(sm::SecureMatrix, pm::PlainMatrix)
+    secure_matrix = SecureMatrix(add.(sm.data, pm.data), length(sm), sm.context)
+
+    secure_matrix
+end
+
+function add(sm::SecureMatrix, scalar::Real)
+    secure_matrix = SecureMatrix(add.(sm.data, scalar), length(sm), sm.context)
+
+    secure_matrix
+end
+
+function add(sm::SecureMatrix, sv::SecureVector)
+    secure_matrix = SecureMatrix(add.(sm.data, Ref(sv)), length(sm), sm.context)
+
+    secure_matrix
+end
+
+function add(sm::SecureMatrix, pv::PlainVector)
+    secure_matrix = SecureMatrix(add.(sm.data, Ref(pv)), length(sm), sm.context)
+
+    secure_matrix
+end
+
+function subtract(sm1::SecureMatrix, sm2::SecureMatrix)
+    secure_matrix = SecureMatrix(subtract.(sm1.data, sm2.data), length(sm1), sm1.context)
+
+    secure_matrix
+end
+
+function subtract(sm::SecureMatrix, pm::PlainMatrix)
+    secure_matrix = SecureMatrix(subtract.(sm.data, pm.data), length(sm), sm.context)
+
+    secure_matrix
+end
+
+function subtract(pm::PlainMatrix, sm::SecureMatrix)
+    secure_matrix = SecureMatrix(subtract.(pm.data, sm.data), length(sm), sm.context)
+
+    secure_matrix
+end
+
+function subtract(sm::SecureMatrix, scalar::Real)
+    secure_matrix = SecureMatrix(subtract.(sm.data, scalar), length(sm), sm.context)
+
+    secure_matrix
+end
+
+function subtract(scalar::Real, sm::SecureMatrix)
+    secure_matrix = SecureMatrix(subtract.(scalar, sm.data), length(sm), sm.context)
+
+    secure_matrix
+end
+
+function subtract(sm::SecureMatrix, sv::SecureVector)
+    secure_matrix = SecureMatrix(subtract.(sm.data, Ref(sv)), length(sm), sm.context)
+
+    secure_matrix
+end
+
+function subtract(sv::SecureVector, sm::SecureMatrix)
+    secure_matrix = SecureMatrix(subtract.(Ref(sv), sm.data), length(sm), sm.context)
+
+    secure_matrix
+end
+
+function subtract(sm::SecureMatrix, pv::PlainVector)
+    secure_matrix = SecureMatrix(subtract.(sm.data, Ref(pv)), length(sm), sm.context)
+
+    secure_matrix
+end
+
+function subtract(pv::PlainVector, sm::SecureMatrix)
+    secure_matrix = SecureMatrix(subtract.(Ref(pv), sm.data), length(sm), sm.context)
+
+    secure_matrix
+end
+
+function negate(sm::SecureMatrix)
+    secure_matrix = SecureMatrix(negate.(sm.data), length(sm), sm.context)
+
+    secure_matrix
+end
+
+function multiply(sm1::SecureMatrix, sm2::SecureMatrix)
+    secure_matrix = SecureMatrix(multiply.(sm1.data, sm2.data), length(sm1), sm1.context)
+
+    secure_matrix
+end
+
+function multiply(sm::SecureMatrix, pm::PlainMatrix)
+    secure_matrix = SecureMatrix(multiply.(sm.data, pm.data), length(sm), sm.context)
+
+    secure_matrix
+end
+
+function multiply(sm::SecureMatrix, scalar::Real)
+    secure_matrix = SecureMatrix(multiply.(sm.data, scalar), length(sm), sm.context)
+
+    secure_matrix
+end
+
+function multiply(sm::SecureMatrix, sv::SecureVector)
+    secure_matrix = SecureMatrix(multiply.(sm.data, Ref(sv)), length(sm), sm.context)
+
+    secure_matrix
+end
+
+function multiply(sm::SecureMatrix, pv::PlainVector)
+    secure_matrix = SecureMatrix(multiply.(sm.data, Ref(pv)), length(sm), sm.context)
+
+    secure_matrix
+end
+
+function rotate(sm::SecureMatrix, shift; wrap_by)
+    # rotation along x axis
+    secure_matrix_rotated = deepcopy(sm)
+    if shift[1]!= 0
+        secure_matrix_rotated = SecureMatrix(rotate.(sm.data, shift[1]; wrap_by), length(sm), sm.context)
+    end
+    # rotation along y axis
+    circshift!(secure_matrix_rotated.data, shift[2])
+
+    secure_matrix_rotated
+end

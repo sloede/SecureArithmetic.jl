@@ -190,3 +190,32 @@ function rotate(sv::SecureVector{<:Unencrypted}, shift; wrap_by)
     # `wrap_by` can be ignored since here length is always equal to capacity
     SecureVector(circshift(sv.data, shift), length(sv), capacity(sv), sv.context)
 end
+
+############################################################################################
+# Matrix
+############################################################################################
+
+function Base.show(io::IO, m::PlainMatrix{<:Unencrypted})
+    print.(io, m.data[1:m.length])
+end
+
+function Base.show(io::IO, ::MIME"text/plain", m::PlainMatrix{<:Unencrypted})
+    print(io, m.length, "-element PlainMatrix{Unencrypted}:\n")
+    Base.print_matrix(io, m.data[1:m.length])
+end
+
+function decrypt_impl!(plain_matrix::PlainMatrix{<:Unencrypted},
+                       secure_matrix::SecureMatrix{<:Unencrypted}, private_key::PrivateKey)
+    decrypt_impl!.(plain_matrix.data, secure_matrix.data, Ref(private_key))
+
+    plain_matrix
+end
+
+function decrypt_impl(secure_matrix::SecureMatrix{<:Unencrypted}, private_key::PrivateKey)
+    context = secure_matrix.context
+    plain_matrix = PlainMatrix([PlainVector(similar(sv.data), length(sv), capacity(sv), context)
+                                for sv in secure_matrix.data],
+                               length(secure_matrix), context)
+
+    decrypt!(plain_matrix, secure_matrix, private_key)
+end
