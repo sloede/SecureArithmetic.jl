@@ -69,10 +69,12 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-      - uses: coverallsapp/github-action@master
+      - uses: coverallsapp/github-action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: ./lcov.info
+          fail-on-error: true
+          debug: true # false
       # Enable tmate debugging of manually-triggered workflows if the input option was provided
       - name: Setup tmate session for debugging
         if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled && always() }}
